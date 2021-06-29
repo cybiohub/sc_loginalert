@@ -198,4 +198,4 @@ mailhub=mail.example.com
 ```
 
 ---
-[logo]: https://md.cybiopress.com/logo200x36.png "Cybionet"
+[logo]: ./md/logo.png "Cybionet"
