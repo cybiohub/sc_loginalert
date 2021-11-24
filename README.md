@@ -2,7 +2,7 @@
 | ------------- |:-------------:|
 
 # Login Alert
-This script will send a email in HTML format at each authentication for one or several specific user.
+This script will send an email in HTML format for each authentication for one or several specific user.
 
 
 ## Screenshot
