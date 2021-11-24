@@ -4,12 +4,12 @@
 # * Creation:           (c) 2004-2021  Cybionet - Ugly Codes Division
 # *
 # * File:               loginalert
-# * Version:            0.1.6
+# * Version:            0.1.7
 # *
 # * Comment:            Script that alerts when accessing the root account.
 # *
 # * Date: March 22, 2021
-# * Modification: June 26, 2021
+# * Modification: November 23, 2021
 # *
 # * **************************************************************************
 # *
@@ -35,8 +35,8 @@ readonly emailTo='user@example.com' 			# ## Single recipient
 #readonly emailTo='user1@example.com, user2@example.com'# ## Multiple recipients
 readonly emailFrom='alert@example.com' 			# ## Sender
 
-#readonly ALLOWIP='184.162.239.249'			# ## Unique IP
-#readonly ALLOWIP='184.162.239.249 149.56.128.12' 	# ## Multiple IP
+#readonly ALLOWIP='192.168.0.200'			# ## Unique IP
+#readonly ALLOWIP='192.168.0.200 192.168.0.240' 	# ## Multiple IP
 readonly ALLOWIP='192.168.0'				# ## IP Range
 #readonly ALLOWIP='172.168.16 192.168.0'		# ## Multiple IP Range
 
@@ -80,31 +80,31 @@ function checkifMuttExist {
  readonly APPDEP='mutt'
 
  dpkg-query -s "${APPDEP}" > /dev/null 2>&1
- dependency=$(echo "${?}")
+ declare -i dependency=$(echo "${?}")
 
  # ## Check if Mutt services is installed.
  # ## Result: 0=Installed, 1=Missing
- if [ "${dependency}" = '1' ]; then
+ if [ "${dependency}" -eq 1 ]; then
    echo -e "\e[34;1;208mINFORMATION:\e[0m Installing the required dependencies (${APPDEP})."
    apt-get install -y "${APPDEP}"
  fi
 
  dpkg-query -s "whois" > /dev/null 2>&1
- dependencyWhois=$(echo "${?}")
+ declare -i dependencyWhois=$(echo "${?}")
 
  # ## Check if Whois package is installed.
  # ## Result: 0=Installed, 1=Missing
- if [ "${dependencyWhois}" = '1' ]; then
+ if [ "${dependencyWhois}" -eq 1 ]; then
    echo -e "\e[34;1;208mINFORMATION:\e[0m Installing the required dependencies Whois)."
    apt-get install -y whois
  fi
 
  dpkg-query -s "gpgsm" > /dev/null 2>&1
- dependencyGpgsm=$(echo "${?}")
+ declare -i dependencyGpgsm=$(echo "${?}")
 
  # ## Check if Gpgsm package is installed.
  # ## Result: 0=Installed, 1=Missing
- if [ "${dependencyGpgsm}" = '1' ]; then
+ if [ "${dependencyGpgsm}" -eq 1 ]; then
    echo -e "\e[34;1;208mINFORMATION:\e[0m Installing the required dependencies Gpgsm)."
    apt-get install -y gpgsm
  fi
@@ -638,8 +638,8 @@ function sendMail {
 # ## EXECUTION
 
 # ## Check if the script are running under root user.
-if [ "${EUID}" -ne '0' ] ; then
-  echo -e '\n\e[33mWARNING: This script must be run as root.\e[0m'
+if [ "${EUID}" -ne 0 ] ; then
+  echo -e '\n\e[33mWARNING: This script must be run with sudo or as root.\e[0m'
   exit 0
 fi
 
