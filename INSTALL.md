@@ -3,25 +3,21 @@
 
 # Installation of the Loginalert script.
 
-Install this script on the machine where you want to be alerted when the user logs on. It will send a email in HTML format at each authentication for a specific user.
+Install this script on the machine where you want to be alerted when a user logs on. It will send an email in HTML format for each authentication (login, ssh, su and sudo).
+
+In the script, we use the "Mutt" application to send the warning email.
 
 ## Requirement
 
- Use "apt-get" command to install these packages.
+ Use "apt-get" command to install these dependencies.
  - mutt
+ - whois
+ - gpgsm
 
 
 ## Deployment
 
-In the script, we use the "Mutt" application to send your warning email.
-
-1. Installation of the mutt package.
-
-```bash
-  apt-get install mutt
-```
-
-2. Deployment of the alert script executable.
+1. Deploy the executable of the "loginalert" script.
 
 ```bash
 cp ./bin/loginalert /usr/bin/
@@ -30,40 +26,43 @@ chown root:root /usr/bin/loginalert
 chmod 500 /usr/bin/loginalert
 ```
 
-3. Add the script launch for a user. In this example, this is the root user.
+2. Add the following entry to the files in the pam.d directory. You should do this at a minimum for "sshd", but we recommend that you also add the line in the "login", "su" and "sudo" files.
 
 ```bash
-vim /root/.bashrc
+vim /etc/pam.d/sshd
+vim /etc/pam.d/login
+vim /etc/pam.d/su
+vim /etc/pam.d/sudo
 ```
 
-and add this line to the end of the file.
+and add this line to the end of the last "session" parameters in the file.
 
 ```
-/usr/bin/loginalert
+session optional pam_exec.so /usr/bin/loginalert
 ```
 
 
 ## Configuration
 
-Adjust these variables in the script to your reality.
+Adjust these variables in the script to match your reality.
 
-1. Configure the email recipient for the destination.
+1. Configure the recipient's email address.
 
 For a single recipient (TO).
 
 ```
-emailTo='user@example.com' 
+emailTo='user@example.com'
 ```
 
-For a several recipients (TO).
+For a several recipients (TO). The delimiter is the comma and spaces don't matter.
 
 ```
 emailTo='user1@example.com, user2@example.com'
 ```
 
-2.  Configure the email for the sender.
+2. Configure the sender's email address.
 
-Difined sender (FROM).
+Defined sender (FROM).
 
 ```
 emailFrom='alert@example.com'
@@ -74,22 +73,22 @@ emailFrom='alert@example.com'
 For an unique IP.
 
 ```
-ALLOWIP='192.168.0.11'                
+ALLOWIP='192.168.0.11'
 ```
 
-For multiple IP. Each IP addresses must be separated by space.
+To add multiple IP addresses. Each of them must be separated by a space.
 
 ```
 ALLOWIP='192.168.0.11 172.16.1.10'
 ```
 
-For an IP range.
+For an IP address range.
 
 ```
 ALLOWIP='192.168.0'
 ```
 
-For multiple IP range. Each IP range must be separated by space.
+For multiple IP address ranges. Each range of IP addresses must be separated by space.
 
 ```
 ALLOWIP='192.168.0 172.16.0'
@@ -98,7 +97,7 @@ ALLOWIP='192.168.0 172.16.0'
 
 ## Custom logo header
 
-Supported image formats: jpeg, png et svg. 
+Supported image formats: jpeg, png et svg.
 Maximum size: 312 x 56
 
 1. Convert your header logo to base64.
@@ -127,7 +126,7 @@ Select the type of image used.
   - jpeg
   - png
   - svg+xml
- 
+
 By example,
 
 For jpg picture
@@ -155,7 +154,43 @@ Replace the base64 image with your own.
 
 This section is only to help people set up email sending from their machine. use whatever method you want, it doesn't matter.
 
-1. Configure email sending. 
+1. Configure email sending.
+
+A. For direct sending of emails with Exim4, uses the commande.
+
+```bash
+dpkg-reconfigure exim4-config
+```
+
+```
+mail sent by smarthost; no local mail
+System mail name:  example.com
+IP-addresses to listen on for incoming SMTP connections: 127.0.0.1
+Other destinations for which mail is accepted: server.example.com
+Visible domain name for local users: example.com
+IP address or host name of the outgoing smarthost: smtp.example.com
+Keep number of DNS-queries minimal (Dial-on-Demand)? No
+Split configuration into small files? No
+```
+
+B. Authenticated sending of email or from a non-commercial connection that requires authentication with SSMTP.
+
+```bash
+vim /etc/ssmtp/ssmtp.conf
+```
+
+```
+# ## Config file for sSMTP sendmail
+
+
+
+
+
+## SMTP Client (_optional_)
+  
+This section is only to help people set up email sending from their machine. use whatever method you want, it doesn't matter.
+
+1. Configure email sending.
 
 A. For direct sending of emails with Exim4, uses the commande.
 
@@ -187,8 +222,8 @@ vim /etc/ssmtp/ssmtp.conf
 # ## Make this empty to disable rewriting.
 root=postmaster
 
-# ## The place where the mail goes. The actual machine name is required no 
-# ## MX records are consulted. Commonly mailhosts are named mail.domain.com
+# ## The destination server where the email goes. The name of the machine is required,
+# ## no MX record is consulted. Usally, mailhosts are named mail.example.com.
 :25, :465, :587 and :2525
 mailhub=mail.example.com
 

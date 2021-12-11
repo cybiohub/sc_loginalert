@@ -4,18 +4,28 @@
 # * Creation:           (c) 2004-2021  Cybionet - Ugly Codes Division
 # *
 # * File:               loginalert
-# * Version:            0.1.7
+# * Version:            0.2.3
 # *
 # * Comment:            Script that alerts when accessing the root account.
 # *
 # * Date: March 22, 2021
-# * Modification: November 23, 2021
+# * Modification: December 11, 2021
 # *
 # * **************************************************************************
 # *
 # * chown root:root loginalert
 # * chmod 500 loginalert
 # * mv loginalert /usr/bin
+# *
+# *
+# * vim /etc/pam.d/
+# *     login
+# *     sshd
+# *     su
+# *     sudo (optional)
+# *
+# *     session optional pam_exec.so /usr/bin/loginalert
+# *
 # *
 # * PICTURE
 # *  Max Size: 312 x 56
@@ -27,250 +37,23 @@
 # *
 # * **************************************************************************
 
-
 #############################################################################################
 # ## CUSTOMIZABLE CONSTANTS/VARIABLES
 
-readonly emailTo='user@example.com' 			# ## Single recipient
-#readonly emailTo='user1@example.com, user2@example.com'# ## Multiple recipients
-readonly emailFrom='alert@example.com' 			# ## Sender
+readonly emailTo='user@example.com'	 			# ## Single recipient
+#readonly emailTo='user1@example.com, user2@example.com' 	# ## Multiple recipients
+readonly emailFrom='alert@example'
 
-#readonly ALLOWIP='192.168.0.200'			# ## Unique IP
-#readonly ALLOWIP='192.168.0.200 192.168.0.240' 	# ## Multiple IP
-readonly ALLOWIP='192.168.0'				# ## IP Range
-#readonly ALLOWIP='172.168.16 192.168.0'		# ## Multiple IP Range
+#readonly ALLOWIP='140.82.112.3'				# ## Unique IP.
+#readonly ALLOWIP='140.82.112.3 172.65.251.78'	 		# ## Multiple IP.
+readonly ALLOWIP='192.168.0'					# ## IP Range.
+#readonly ALLOWIP='172.16.0 192.168.0'				# ## Multiple IP Range.
 
+myLogoAlt='Cybionet'
+myLogoMime='jpeg;base64'
 
-#####################################################################
-# ## GLOBAL VARIABLES
-
-# !!!!!!!!!! ERREUR DE LOGIQUE: voir checkifMuttExist !!!!!!!!!!!!!!!
-readonly APPMAIL='/usr/bin/mutt'
-
-myHost=$(hostname -s)
-myDate=$(date +"%B %d,%Y  %H:%M:%S (%Z)")
-myId=$(whoami)
-
-emailSubject="Alert: Root Access from ${ipAddr} on ${myHost}"
-
-readonly reportHeader='ALERT REPORT'
-reportSubTitle="Your root account was used to log in to <strong>${myHost}</strong> machine."
-
-readonly reportTitleHigh='Login From Unkown Device'
-readonly reportSeverityHigh='High'
-readonly reportSeverityClassHigh='font-size:15pt;color:#e81123;font-weight:bold'
-
-readonly reportTitleMedium='Login From Authorized Device'
-readonly reportSeverityMedium='Medium'
-readonly reportSeverityClassMedium='font-size:15pt;color:##ff8e00;font-weight:bold'
-
-readonly reportTitleLow='Login From Authorized Device'
-readonly reportSeverityLow='Low'
-readonly reportSeverityClassLow='font-size:15pt;color:#FFA059;font-weight:bold'
-
-myPath=$(dirname $0)
-reportContent="${myPath}/email.html"
-
-
-#####################################################################
-# ## FUNCTIONS
-
-# ## Check Script dependencies.
-function checkifMuttExist {
- readonly APPDEP='mutt'
-
- dpkg-query -s "${APPDEP}" > /dev/null 2>&1
- declare -i dependency=$(echo "${?}")
-
- # ## Check if Mutt services is installed.
- # ## Result: 0=Installed, 1=Missing
- if [ "${dependency}" -eq 1 ]; then
-   echo -e "\e[34;1;208mINFORMATION:\e[0m Installing the required dependencies (${APPDEP})."
-   apt-get install -y "${APPDEP}"
- fi
-
- dpkg-query -s "whois" > /dev/null 2>&1
- declare -i dependencyWhois=$(echo "${?}")
-
- # ## Check if Whois package is installed.
- # ## Result: 0=Installed, 1=Missing
- if [ "${dependencyWhois}" -eq 1 ]; then
-   echo -e "\e[34;1;208mINFORMATION:\e[0m Installing the required dependencies Whois)."
-   apt-get install -y whois
- fi
-
- dpkg-query -s "gpgsm" > /dev/null 2>&1
- declare -i dependencyGpgsm=$(echo "${?}")
-
- # ## Check if Gpgsm package is installed.
- # ## Result: 0=Installed, 1=Missing
- if [ "${dependencyGpgsm}" -eq 1 ]; then
-   echo -e "\e[34;1;208mINFORMATION:\e[0m Installing the required dependencies Gpgsm)."
-   apt-get install -y gpgsm
- fi
-}
-
-# ## Checks if the IP address is in the list. 
-function ipMatchListorNot {
- ipAddr=$(who | grep -v 'tty' | grep '(' | cut -d'(' -f2 | cut -d')' -f1 | tail -n1)
-
-# ROBERT array1
- declare -a authorizedIP=($(printf "${ALLOWIP}"))
-
- if [ -z "${ipAddr}" ]; then
-   ipAddr='Error'
-   reportTitle='Error'
- fi
-
- for item in "${authorizedIP[@]}"; do
-  #if [[ "${item}" =~ "${ipAddr}" ]]; then #range
-  #if [[ "${ipAddr}" == "${item}" ]]; then
-  if [[ "${ipAddr}" =~ "${item}" ]]; then
-    reportTitle="${reportTitleLow}"
-    reportSeverity="${reportSeverityLow}"
-    reportSeverityClass="${reportSeverityClassLow}"
-    reportWarn='#ffffff'
-    break
-  else
-    reportTitle="${reportTitleHigh}"
-    reportSeverity="${reportSeverityHigh}"
-    reportSeverityClass="${reportSeverityClassHigh}"
-    reportWarn='#ff0000'
-  fi
- done
-}
-
-# ## Check that the IP address is not an internet address.
-function ipRFC1918 {
- PATTERN='^10\.'         # 10.0.0.0/8
- PATTERN+='|^172\.16\.'  # 172.16.0.0/12
- PATTERN+='|^192\.168\.' # 192.168.0.0/16
- PATTERN+='|^169\.254\.' # not strictly private range, but link local
-
- for i in {seq 16 31} ; do
-  PATTERN+="|^10\.$i\."
-  PATTERN+="|^172\.16\.$i\."
-  PATTERN+="|^192\.168\.$i\."
-  PATTERN+="|^169\.254\.$i\."
- done
-
- resulta=$(echo "${ipAddr}" | egrep "$PATTERN")
-
- if [ -z "${resulta}" ]; then
-   ipCountry=$(whois -H "${ipAddr}" | grep -i 'country' | uniq | awk -F ":" '{print $2}' | sed 's/ *$//' | sed -e 's/[ \t]*//')
- else
-   ipCountry='RFC 1918'
- fi
-}
-
-# ## Header et CSS.
-function setHtmlHeader {
- # ## Create/clear html file.
- echo "" > "${reportContent}"
-
- # ## Adding a header in html file.
-echo -e "
-<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">
-<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:v=\"urn:schemas-microsoft-com:vml\" xmlns:o=\"urn:schemas-microsoft-com:office:office\">
-<head>
-<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />
-<meta name=\"x-apple-disable-message-reformatting\" />
-<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />
-<style type=\"text/css\">
-    body, .maintable { height:100% !important; width:100% !important; margin:0; padding:0;}
-    img, a img { border:0; outline:none; text-decoration:none;}
-    p {margin-top:0; margin-right:0; margin-left:0; padding:0;}
-    .ReadMsgBody {width:100%;}
-    .ExternalClass {width:100%;}
-    .ExternalClass, .ExternalClass p, .ExternalClass span, .ExternalClass font, .ExternalClass td, .ExternalClass div {line-height:100%;}
-    img {-ms-interpolation-mode: bicubic;}
-    body, table, td, p, a, li, blockquote {-ms-text-size-adjust:100%; -webkit-text-size-adjust:100%;}
-
-    .lge {font-size:28pt;font-family:Segoe UI Light;color:#222}
-    .rgl {font-size:13pt;font-family:Segoe UI Light;color:#222}
-    .hlt {font-size:13pt;font-family:Segoe UI Bold;color:#222}
-    .add {font-size:8pt;font-family:Segoe UI Light;color:#666}
-    .btnb {background:#2172B9}
-    .btn {font-size:15pt;font-family:Segoe UI;background:#2172B9;color:#fff;text-decoration:none;display:inline-block;padding: 6px 20px; border: 1px solid #2172B9;}
-    .symblue {font-size:15pt;color:#7499FF;font-weight:bold }
-    .symgreen {font-size:15pt;color:#00ff00:font-weight:bold }
-    .symyellow {font-size:15pt;color:#FFA059;font-weight:bold }
-    .symorange {font-size:15pt;color:##ff8e00;font-weight:bold }
-    .symred {font-size:15pt;color:#e81123;font-weight:bold }
- </style>
-
- <style type=\"text/css\">
- @media only screen and (max-width: 480px) {
- .rtable {width: 100% !important;}
- .rtable tr {height:auto !important; display: block;}
- .contenttd {max-width: 100% !important; display: block; width: auto !important;}
- .contenttd:after {content: \"\"; display: table; clear: both;}
- .hiddentds {display: none;}
- .imgtable, .imgtable table {max-width: 100% !important; height: auto; float: none; margin: 0 auto;}
- .imgtable.btnset td {display: inline-block;}
- .imgtable img {width: 100%; height: auto !important;display: block;}
- table {float: none;}
- .mobileHide {display: none !important;}
-}
-@media only screen and (min-width: 481px) {
- .desktopHide {display: none !important;}
-}
-</style>
-<!--[if gte mso 9]>
-<xml>
-  <o:OfficeDocumentSettings>
-    <o:AllowPNG/>
-    <o:PixelsPerInch>96</o:PixelsPerInch>
-  </o:OfficeDocumentSettings>
-</xml>
-<![endif]-->
-<title></title>
-</head>
-
-<body style=\"overflow: auto; padding:0; margin:0; font-size: 12px; font-family: arial, helvetica, sans-serif; cursor:auto; background-color:#f0f0f0\">
-" >> "${reportContent}"
-}
-
-# ## Summary of access.
-function emailSumHeader {
-echo -e "
- <table cellspacing=\"0\" cellpadding=\"0\" width=\"100%\" bgcolor=\"#f0f0f0\">
-  <tr>
-    <td style=\"FONT-SIZE: 0px; HEIGHT: 0px; LINE-HEIGHT: 0\"></td>
-  </tr>
-  <tr>
-    <td valign=\"top\">
-
-<!-- Space -->
-<table style=\"WIDTH: 100%\" cellspacing=\"0\" cellpadding=\"0\" align=\"left\">
- <tr style=\"HEIGHT: 20px\" height=\"20\">
-  <th class=\"contenttd\" style=\"BORDER-TOP: medium none; BORDER-RIGHT: medium none; WIDTH: 616px; VERTICAL-ALIGN: middle; BORDER-BOTTOM: medium none; FONT-WEIGHT: normal; PADDING-BOTTOM: 10px; TEXT-ALIGN: left; PADDING-TOP: 10px; PADDING-LEFT: 10px; BORDER-LEFT: medium none; PADDING-RIGHT: 10px\">
-  </th>
- </tr>
-</table>
-
-<!-- Top -->
-    <table class=\"rtable\" style=\"WIDTH: 636px; MARGIN: 0px auto\" cellspacing=\"0\" cellpadding=\"0\" width=\"636\" align=\"center\" border=\"0\">
-    <tr>
-      <th class=\"contenttd\" style=\"BORDER-TOP: medium none; BORDER-RIGHT: medium none; WIDTH: 636px; BORDER-BOTTOM: medium none; FONT-WEIGHT: normal; PADDING-BOTTOM: 0px; TEXT-ALIGN: left; PADDING-TOP: 0px; PADDING-LEFT: 0px; BORDER-LEFT: medium none; PADDING-RIGHT: 0px; BACKGROUND-COLOR: #0176ec\">
-    
-      
-      <table style=\"WIDTH: 100%\" cellspacing=\"0\" cellpadding=\"0\" align=\"left\">
-    <tr style=\"HEIGHT: 73px\" height=\"73\">
-      <th class=\"contenttd\" style=\"BORDER-TOP: medium none; BORDER-RIGHT: medium none; WIDTH: 298px; VERTICAL-ALIGN: top; BORDER-BOTTOM: medium none; FONT-WEIGHT: normal; PADDING-BOTTOM: 10px; TEXT-ALIGN: left; PADDING-TOP: 10px; PADDING-LEFT: 10px; BORDER-LEFT: medium none; PADDING-RIGHT: 10px; BACKGROUND-COLOR: transparent\"><!--[if gte mso 12]>
-
-
-      <table cellspacing=\"0\" cellpadding=\"0\" border=\"0\" width=\"100%\"><tr><td align=\"center\">
-<![endif]-->
-<table class=\"imgtable\" style=\"MARGIN: 0px auto\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" border=\"0\">
-<tr>
-<td style=\"PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; PADDING-RIGHT: 0px\" align=\"center\">
-<table cellspacing=\"0\" cellpadding=\"0\" border=\"0\">
-<tr>
-
-<!-- BEGIN IMAGE -->
-<td style=\"BORDER-TOP: medium none; BORDER-RIGHT: medium none; BORDER-BOTTOM: medium none; BORDER-LEFT: medium none; BACKGROUND-COLOR: transparent\"><img style=\"BORDER-TOP: medium none; BORDER-RIGHT: medium none; BORDER-BOTTOM: medium none; BORDER-LEFT: medium none; DISPLAY: block\" alt=\"Cybionet\" src=\"data:image/png;base64,
-iVBORw0KGgoAAAANSUhEUgAAATgAAAA4CAYAAABpCOTeAAAZmnpUWHRSYXcgcHJvZmlsZSB0eXBl
+# ## Put your base64 jpeg logo here.
+myLogo='iVBORw0KGgoAAAANSUhEUgAAATgAAAA4CAYAAABpCOTeAAAZmnpUWHRSYXcgcHJvZmlsZSB0eXBl
 IGV4aWYAAHjapZpZkly5kUX/sQotAfOwHAAOmPUOevk6FxFkkaWSumTNJDOTMbwH+HAHR7jzv/9z
 3T/4U0btLpfW66jV8yePPOLkl+4/f+b7Hnx+39+f1L+/hd8fd+nHmyIPJb3y899ev48fHo+8Pn4f
 35+fYfJ4+eVC43yfWL8/Mb8Xiv17g+/jP26UwucG3r4Xmt8Lpfi9c/78f33vXEdvv27h+z5tP3x/
@@ -531,7 +314,256 @@ u5S8TNo+VlreSXq4ZtFXGSMN6CLt+jVN1pE10pz7pWsVxLVkDSluppS4S1qXIWVafpswx9Ol9M1S
 8o/S8lekxKv9OholRY+RBiVJW6Tkw9Kir6QmFwZLHjdI5WZId26R3jwqTU+Xlh+XdmZLmVJ2spS5
 Vcr8RTr8nbThFWn27dIN5YKkENFjg9z2+tIVK6QDBXdnplNKWi+N6i+dEf0jRUyRpku/vi1lNH1X
 mpTp91GwwljMyUelVd9Jra4MtOzHSy8lSZukQ/ulnz6VGvoVJRTOPHBWzAty+NEXMsZYYSmG9SY0
-mIYxbZ1h6YcRRhhhhBFGGGGEERz8H4WmAUO2R7hFAAAAAElFTkSuQmCC
+mIYxbZ1h6YcRRhhhhBFGGGGEERz8H4WmAUO2R7hFAAAAAElFTkSuQmCC'
+
+
+#####################################################################
+# ## GLOBAL VARIABLES
+
+readonly APPMAIL='/usr/bin/mutt'
+
+readonly myHost=$(hostname -s)
+readonly myDate=$(date +"%B %d, %Y  %H:%M:%S (%Z)")
+ipAddr="${PAM_RHOST}"
+
+readonly reportHeader='ALERT REPORT'
+readonly reportSubTitle="Your <strong>${PAM_USER}</strong> account was used to log in to <strong>${myHost}</strong> machine."
+
+readonly reportTitleHigh='Login From Unkown Device'
+readonly reportSeverityHigh='High'
+readonly reportSeverityClassHigh='font-size:15pt;color:#e81123;font-weight:bold'
+
+readonly reportTitleMedium='Login From Authorized Device'
+readonly reportSeverityMedium='Medium'
+readonly reportSeverityClassMedium='font-size:15pt;color:##ff8e00;font-weight:bold'
+
+readonly reportTitleLow='Login From Authorized Device'
+readonly reportTitleLowLogin='Login From Console'
+readonly reportTitleLowSu='Login With Privilege Escalation'
+readonly reportSeverityLow='Low'
+readonly reportSeverityClassLow='font-size:15pt;color:#FFA059;font-weight:bold'
+
+readonly myPath=$(dirname $0)
+readonly reportContent="${myPath}/email.html"
+
+
+#####################################################################
+# ## FUNCTIONS
+
+# ## Check Script dependencies.
+function checkifMuttExist {
+ readonly APPDEP='mutt'
+
+ dpkg-query -s "${APPDEP}" > /dev/null 2>&1
+ dependency=$(echo ${?})
+
+ # ## Check if Mutt services is installed.
+ # ## Result: 0=Installed, 1=Missing
+ if [ "${dependency}" = 1 ]; then
+   echo -e "\e[34;1;208mINFORMATION:\e[0m Installing the required dependencies (${APPDEP})."
+   apt-get install -y "${APPDEP}"
+ fi
+
+ dpkg-query -s "whois" > /dev/null 2>&1
+ dependencyWhois=$(echo ${?})
+
+ # ## Check if Whois package is installed.
+ # ## Result: 0=Installed, 1=Missing
+ if [ "${dependencyWhois}" = 1 ]; then
+   echo -e "\e[34;1;208mINFORMATION:\e[0m Installing the required dependencies Whois)."
+   apt-get install -y whois
+ fi
+
+ dpkg-query -s "gpgsm" > /dev/null 2>&1
+ dependencyGpgsm=$(echo ${?})
+
+ # ## Check if Gpgsm package is installed.
+ # ## Result: 0=Installed, 1=Missing
+ if [ "${dependencyGpgsm}" = 1 ]; then
+   echo -e "\e[34;1;208mINFORMATION:\e[0m Installing the required dependencies Gpgsm)."
+   apt-get install -y gpgsm
+ fi
+}
+
+# ## Checks if the IP address is in the list.
+function ipMatchListorNot {
+ # ## Put IP Address in array.
+ declare -a authorizedIP=($(printf "${ALLOWIP}"))
+
+ if [ -z "${ipAddr}" ]; then
+   ipAddr='Error'
+   reportTitle="Error"
+ fi
+
+ for item in "${authorizedIP[@]}"; do
+  if [[ "${ipAddr}" =~ "${item}" ]]; then
+# ## Authentification SSH dans la liste autorisée (PAM_SERVICE est SSH)
+      # ## Severity Low (remote).
+      reportTitle="${reportTitleLow}"
+      reportSeverity="${reportSeverityLow}"
+      reportSeverityClass="${reportSeverityClassLow}"
+      reportWarn="#ffffff"
+      break
+  else
+    # ## Authentification LOGIN (aucun PAM_RUSER et PAM_SERVICE est LOGIN)
+    if [[ -z "${PAM_RUSER}" && "${PAM_SERVICE}" == "login" ]]; then
+      # ## Severity Low (local).
+      reportTitle="${reportTitleLowLogin}"
+      reportSeverity="${reportSeverityLow}"
+      reportSeverityClass="${reportSeverityClassLow}"
+      reportWarn="#ffffff"
+    elif [[ "${PAM_SERVICE}" =~ ^(su.*|sudo)$ ]]; then
+    # ## Authentification SUDO et SU ( PAM_TTY est PTS)
+      # ## Severity Low (local).
+      reportTitle="${reportTitleLowSu}"
+      reportSeverity="${reportSeverityLow}"
+      reportSeverityClass="${reportSeverityClassLow}"
+      reportWarn="#ffffff"
+    else
+    # ## Authentification SSH PAS dans la liste autorisée (PAM_SERVICE est SSH)
+      # ## Severity High (remote).
+      reportTitle="${reportTitleHigh}"
+      reportSeverity="${reportSeverityHigh}"
+      reportSeverityClass="${reportSeverityClassHigh}"
+      reportWarn="#ff0000"
+    fi
+  fi
+ done
+}
+
+
+# ## Check that the IP address is not an internet address.
+function ipRFC1918 {
+ PATTERN='^10\.'         # 10.0.0.0/8
+ PATTERN+='|^172\.16\.'  # 172.16.0.0/12
+ PATTERN+='|^192\.168\.' # 192.168.0.0/16
+ PATTERN+='|^169\.254\.' # not strictly private range, but link local
+
+ for i in {seq 16 31} ; do
+  PATTERN+="|^10\.$i\."
+  PATTERN+="|^172\.16\.$i\."
+  PATTERN+="|^192\.168\.$i\."
+  PATTERN+="|^169\.254\.$i\."
+ done
+
+ resulta=$(echo ${ipAddr} | egrep "$PATTERN")
+
+ if [ -z "${resulta}" ]; then
+   ipCountry=$(whois -H "${ipAddr}" | grep -i country | uniq | awk -F ":" '{print $2}' | sed 's/ *$//' | sed -e 's/[ \t]*//')
+ else
+   ipCountry="RFC 1918"
+ fi
+}
+
+# ## Header et CSS.
+function setHtmlHeader {
+ # ## Create/clear html file.
+ echo "" > "${reportContent}"
+
+ # ## Adding a header in html file.
+echo -e "
+<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">
+<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:v=\"urn:schemas-microsoft-com:vml\" xmlns:o=\"urn:schemas-microsoft-com:office:office\">
+<head>
+<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />
+<meta name=\"x-apple-disable-message-reformatting\" />
+<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />
+<style type=\"text/css\">
+    body, .maintable { height:100% !important; width:100% !important; margin:0; padding:0;}
+    img, a img { border:0; outline:none; text-decoration:none;}
+    p {margin-top:0; margin-right:0; margin-left:0; padding:0;}
+    .ReadMsgBody {width:100%;}
+    .ExternalClass {width:100%;}
+    .ExternalClass, .ExternalClass p, .ExternalClass span, .ExternalClass font, .ExternalClass td, .ExternalClass div {line-height:100%;}
+    img {-ms-interpolation-mode: bicubic;}
+    body, table, td, p, a, li, blockquote {-ms-text-size-adjust:100%; -webkit-text-size-adjust:100%;}
+
+    .lge {font-size:28pt;font-family:Segoe UI Light;color:#222}
+    .rgl {font-size:13pt;font-family:Segoe UI Light;color:#222}
+    .hlt {font-size:13pt;font-family:Segoe UI Bold;color:#222}
+    .add {font-size:8pt;font-family:Segoe UI Light;color:#666}
+    .btnb {background:#2172B9}
+    .btn {font-size:15pt;font-family:Segoe UI;background:#2172B9;color:#fff;text-decoration:none;display:inline-block;padding: 6px 20px; border: 1px solid #2172B9;}
+    .symblue {font-size:15pt;color:#7499FF;font-weight:bold }
+    .symgreen {font-size:15pt;color:#00ff00:font-weight:bold }
+    .symyellow {font-size:15pt;color:#FFA059;font-weight:bold }
+    .symorange {font-size:15pt;color:##ff8e00;font-weight:bold }
+    .symred {font-size:15pt;color:#e81123;font-weight:bold }
+ </style>
+
+ <style type=\"text/css\">
+ @media only screen and (max-width: 480px) {
+ .rtable {width: 100% !important;}
+ .rtable tr {height:auto !important; display: block;}
+ .contenttd {max-width: 100% !important; display: block; width: auto !important;}
+ .contenttd:after {content: \"\"; display: table; clear: both;}
+ .hiddentds {display: none;}
+ .imgtable, .imgtable table {max-width: 100% !important; height: auto; float: none; margin: 0 auto;}
+ .imgtable.btnset td {display: inline-block;}
+ .imgtable img {width: 100%; height: auto !important;display: block;}
+ table {float: none;}
+ .mobileHide {display: none !important;}
+}
+@media only screen and (min-width: 481px) {
+ .desktopHide {display: none !important;}
+}
+</style>
+<!--[if gte mso 9]>
+<xml>
+  <o:OfficeDocumentSettings>
+    <o:AllowPNG/>
+    <o:PixelsPerInch>96</o:PixelsPerInch>
+  </o:OfficeDocumentSettings>
+</xml>
+<![endif]-->
+<title></title>
+</head>
+
+<body style=\"overflow: auto; padding:0; margin:0; font-size: 12px; font-family: arial, helvetica, sans-serif; cursor:auto; background-color:#f0f0f0\">
+" >> "${reportContent}"
+}
+
+# ## Summary of access.
+function emailSumHeader {
+echo -e "
+ <table cellspacing=\"0\" cellpadding=\"0\" width=\"100%\" bgcolor=\"#f0f0f0\">
+  <tr>
+    <td style=\"FONT-SIZE: 0px; HEIGHT: 0px; LINE-HEIGHT: 0\"></td>
+  </tr>
+  <tr>
+    <td valign=\"top\">
+
+<!-- Space -->
+<table style=\"WIDTH: 100%\" cellspacing=\"0\" cellpadding=\"0\" align=\"left\">
+ <tr style=\"HEIGHT: 20px\" height=\"20\">
+  <th class=\"contenttd\" style=\"BORDER-TOP: medium none; BORDER-RIGHT: medium none; WIDTH: 616px; VERTICAL-ALIGN: middle; BORDER-BOTTOM: medium none; FONT-WEIGHT: normal; PADDING-BOTTOM: 10px; TEXT-ALIGN: left; PADDING-TOP: 10px; PADDING-LEFT: 10px; BORDER-LEFT: medium none; PADDING-RIGHT: 10px\">
+  </th>
+ </tr>
+</table>
+
+<!-- Top -->
+    <table class=\"rtable\" style=\"WIDTH: 636px; MARGIN: 0px auto\" cellspacing=\"0\" cellpadding=\"0\" width=\"636\" align=\"center\" border=\"0\">
+    <tr>
+      <th class=\"contenttd\" style=\"BORDER-TOP: medium none; BORDER-RIGHT: medium none; WIDTH: 636px; BORDER-BOTTOM: medium none; FONT-WEIGHT: normal; PADDING-BOTTOM: 0px; TEXT-ALIGN: left; PADDING-TOP: 0px; PADDING-LEFT: 0px; BORDER-LEFT: medium none; PADDING-RIGHT: 0px; BACKGROUND-COLOR: #0176ec\">
+
+
+      <table style=\"WIDTH: 100%\" cellspacing=\"0\" cellpadding=\"0\" align=\"left\">
+    <tr style=\"HEIGHT: 73px\" height=\"73\">
+    <tr style=\"HEIGHT: 73px\" height=\"73\">
+      <th class=\"contenttd\" style=\"BORDER-TOP: medium none; BORDER-RIGHT: medium none; WIDTH: 298px; VERTICAL-ALIGN: top; BORDER-BOTTOM: medium none; FONT-WEIGHT: normal; PADDING-BOTTOM: 10px; TEXT-ALIGN: left; PADDING-TOP: 10px; PADDING-LEFT: 10px; BORDER-LEFT: medium none; PADDING-RIGHT: 10px; BACKGROUND-COLOR: transparent\"><!--[if gte mso 12]>
+
+
+      <table cellspacing=\"0\" cellpadding=\"0\" border=\"0\" width=\"100%\"><tr><td align=\"center\">
+<![endif]-->
+<table class=\"imgtable\" style=\"MARGIN: 0px auto\" cellspacing=\"0\" cellpadding=\"0\" align=\"center\" border=\"0\">
+<tr>
+<td style=\"PADDING-BOTTOM: 0px; PADDING-TOP: 0px; PADDING-LEFT: 0px; PADDING-RIGHT: 0px\" align=\"center\">
+<table cellspacing=\"0\" cellpadding=\"0\" border=\"0\">
+<tr>
+
+<!-- BEGIN IMAGE -->
+<td style=\"BORDER-TOP: medium none; BORDER-RIGHT: medium none; BORDER-BOTTOM: medium none; BORDER-LEFT: medium none; BACKGROUND-COLOR: transparent\"><img style=\"BORDER-TOP: medium none; BORDER-RIGHT: medium none; BORDER-BOTTOM: medium none; BORDER-LEFT: medium none; DISPLAY: block\" alt=\"Cybionet\" src=\"data:image/png;base64,
+${myLogo}
 \" width=\"298\" hspace=\"0\" vspace=\"0\" /></td>
 <!-- END IMAGE -->
 
@@ -586,9 +618,12 @@ mIYxbZ1h6YcRRhhhhBFGGGGEERz8H4WmAUO2R7hFAAAAAElFTkSuQmCC
    <strong>Severity:<font style=\"FONT-SIZE:14px;${reportSeverityClass}\"> ${reportSeverity}&nbsp;</font></strong><br />
    Date and Time: ${myDate}<br />
    <br />
-   Device IP: ${ipAddr}&nbsp;<br />
-   Country: ${ipCountry}</p>
+   User: ${PAM_USER}&nbsp;<br />
 
+   ${infoDetail}
+
+   Service: ${PAM_SERVICE}&nbsp;<br />
+   TTY: ${PAM_TTY}</p>
   </th>
  </tr>
 </table>
@@ -614,15 +649,15 @@ mIYxbZ1h6YcRRhhhhBFGGGGEERz8H4WmAUO2R7hFAAAAAElFTkSuQmCC
  <tr>
    <td style=\"FONT-SIZE: 0px; HEIGHT: 8px; LINE-HEIGHT: 0\">&nbsp;</td>
  </tr>
-</table>" >> "${reportContent}"
-}
+</table>"
+} >> "${reportContent}"
 
 # ## Adding html footer.
 function setFooter {
  echo -e "
  </body>
- </html>" >> "${reportContent}"
-}
+ </html>"
+} >> "${reportContent}"
 
 # ## Sending email.
 function sendMail {
@@ -650,17 +685,48 @@ clear
 checkifMuttExist
 
 # ## Did IP address match the autorized list.
-ipMatchListorNot
-ipRFC1918
+if [ "${PAM_TYPE}" != "open_session" ]; then
+  exit 0
+else {
 
-# ## Builds HTML email.
-setHtmlHeader
-emailSumHeader
+ # ## SU/SUDO
+  if [[ "${PAM_SERVICE}" =~ ^(su.*|sudo)$ ]]; then
 
-setFooter
+    infoDetail="      From User: ${PAM_RUSER}&nbsp;<br /><br />"
+    ipMatchListorNot
 
-# ## Sending HTML report.
-sendMail
+    emailSubject="Alert: ${PAM_USER} Access with privilege escalation on ${myHost}"
+
+ # ## LOGIN
+  elif [[ "${PAM_SERVICE}" =~ ^(login)$ ]]; then
+
+    infoDetail="      <br />"
+    ipMatchListorNot
+
+    emailSubject="Alert: ${PAM_USER} Access from console on ${myHost}"
+  else
+ # ## SSH
+    ipMatchListorNot
+    ipRFC1918
+
+    infoDetail="
+      <br />Device IP: ${ipAddr}&nbsp;<br />
+      Country: ${ipCountry}&nbsp;<br /><br />
+    "
+
+    emailSubject="Alert: ${PAM_USER} Access from ${ipAddr} on ${myHost}"
+  fi
+
+ 
+    # ## Builds HTML email.
+    setHtmlHeader
+    emailSumHeader
+
+    setFooter
+
+    # ## Sending HTML report.
+    sendMail
+} fi
 
 # ## Exit.
 exit 0
