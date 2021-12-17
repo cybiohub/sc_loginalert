@@ -4,12 +4,12 @@
 # * Creation:           (c) 2004-2021  Cybionet - Ugly Codes Division
 # *
 # * File:               loginalert
-# * Version:            0.2.3
+# * Version:            0.2.4b
 # *
 # * Comment:            Script that alerts when accessing the root account.
 # *
 # * Date: March 22, 2021
-# * Modification: December 11, 2021
+# * Modification: December 16, 2021
 # *
 # * **************************************************************************
 # *
@@ -562,7 +562,7 @@ echo -e "
 <tr>
 
 <!-- BEGIN IMAGE -->
-<td style=\"BORDER-TOP: medium none; BORDER-RIGHT: medium none; BORDER-BOTTOM: medium none; BORDER-LEFT: medium none; BACKGROUND-COLOR: transparent\"><img style=\"BORDER-TOP: medium none; BORDER-RIGHT: medium none; BORDER-BOTTOM: medium none; BORDER-LEFT: medium none; DISPLAY: block\" alt=\"Cybionet\" src=\"data:image/png;base64,
+<td style=\"BORDER-TOP: medium none; BORDER-RIGHT: medium none; BORDER-BOTTOM: medium none; BORDER-LEFT: medium none; BACKGROUND-COLOR: transparent\"><img style=\"BORDER-TOP: medium none; BORDER-RIGHT: medium none; BORDER-BOTTOM: medium none; BORDER-LEFT: medium none; DISPLAY: block\" alt=\"${myLogoAlt}\" src=\"data:image/png;base64,
 ${myLogo}
 \" width=\"298\" hspace=\"0\" vspace=\"0\" /></td>
 <!-- END IMAGE -->
@@ -691,6 +691,10 @@ else {
 
  # ## SU/SUDO
   if [[ "${PAM_SERVICE}" =~ ^(su.*|sudo)$ ]]; then
+
+    if [[ "${PAM_SERVICE}" == "sudo" && -z "${PAM_TTY}" ]]; then
+      exit 0
+    fi
 
     infoDetail="      From User: ${PAM_RUSER}&nbsp;<br /><br />"
     ipMatchListorNot
