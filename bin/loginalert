@@ -1,15 +1,15 @@
 #! /bin/bash
 #set -x
 # * **************************************************************************
-# * Creation:           (c) 2004-2021  Cybionet - Ugly Codes Division
+# * Creation:           (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               loginalert
-# * Version:            0.2.4b
+# * Version:            0.2.5
 # *
 # * Comment:            Script that alerts when accessing the root account.
 # *
 # * Date: March 22, 2021
-# * Modification: December 16, 2021
+# * Modification: January 04, 2021
 # *
 # * **************************************************************************
 # *
@@ -49,8 +49,10 @@ readonly emailFrom='alert@example'
 readonly ALLOWIP='192.168.0'					# ## IP Range.
 #readonly ALLOWIP='172.16.0 192.168.0'				# ## Multiple IP Range.
 
-myLogoAlt='Cybionet'
-myLogoMime='jpeg;base64'
+readonly excludedUsers='ansible_user'                           # ## To exclude users used for automated scripts (Ex.: Ansible).
+
+myLogoAlt='Cybionet'                                            # ## Alternate name for the logo.
+myLogoMime='jpeg;base64'					# ## Supported Types: jpeg;base64, png;base64 or svg+xml;base64.
 
 # ## Put your base64 jpeg logo here.
 myLogo='iVBORw0KGgoAAAANSUhEUgAAATgAAAA4CAYAAABpCOTeAAAZmnpUWHRSYXcgcHJvZmlsZSB0eXBl
@@ -316,6 +318,7 @@ Vcr8RTr8nbThFWn27dIN5YKkENFjg9z2+tIVK6QDBXdnplNKWi+N6i+dEf0jRUyRpku/vi1lNH1X
 mpTp91GwwljMyUelVd9Jra4MtOzHSy8lSZukQ/ulnz6VGvoVJRTOPHBWzAty+NEXMsZYYSmG9SY0
 mIYxbZ1h6YcRRhhhhBFGGGGEERz8H4WmAUO2R7hFAAAAAElFTkSuQmCC'
 
+declare -r version="v0.2.5"
 
 #####################################################################
 # ## GLOBAL VARIABLES
@@ -647,7 +650,7 @@ ${myLogo}
   </td>
  </tr>
  <tr>
-   <td style=\"FONT-SIZE: 0px; HEIGHT: 8px; LINE-HEIGHT: 0\">&nbsp;</td>
+   <td style=\"FONT-SIZE: 8px; HEIGHT: 8px; LINE-HEIGHT: 0\">${version}&nbsp;</td>
  </tr>
 </table>"
 } >> "${reportContent}"
@@ -688,6 +691,15 @@ checkifMuttExist
 if [ "${PAM_TYPE}" != "open_session" ]; then
   exit 0
 else {
+
+ # ## USER EXCLUSION
+  declare -a excludedUser=($(printf "${excludedUsers}"))
+
+  for item in "${excludedUser[@]}"; do
+    if [[ "${excludedUser}" == "${PAM_USER}" || "${excludedUser}" == "${PAM_RUSER}" ]]; then
+      exit 0
+    fi
+  done
 
  # ## SU/SUDO
   if [[ "${PAM_SERVICE}" =~ ^(su.*|sudo)$ ]]; then
