@@ -27,7 +27,7 @@ Example of an email alert with an authorized IP address.
 
 Example of an email alert with an unauthorized IP address.
 
-![Email Alert Unauthorized](./md/LASSHNOOK.png "Email Alert Unauthorized for SSH")
+![Email Alert Unauthorized](./md/LASSHNOK.png "Email Alert Unauthorized for SSH")
 
 <br>
 
