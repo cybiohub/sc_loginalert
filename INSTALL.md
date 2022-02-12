@@ -18,17 +18,17 @@ The `loginalert` application requires the following additional packages to work.
 
 1. Download files from this repository directly with git or via https.
    ```bash
-  wget -o loginalert.zip https://github.com/cybiohub/sc_loginalert/archive/refs/heads/main.zip
+   wget -o loginalert.zip https://github.com/cybiohub/sc_loginalert/archive/refs/heads/main.zip
    ```
 
 2. Unzip the zip file.
    ```bash
-  unzip loginalert.zip
+   unzip loginalert.zip
    ```
 
 3. Make changes to the install script to configure it to match your environment.
 
-	==You need to customize the following settings:==
+	You need to customize the following settings:
 
 	- The destination email address(es).
 	- The sending email address.
@@ -41,24 +41,24 @@ The `loginalert` application requires the following additional packages to work.
 5. Deploy the executable of the `loginalert` script.
 
    ```bash
-  cp ./bin/loginalert /usr/bin/
-  chown root:root /usr/bin/loginalert
-  chmod 500 /usr/bin/loginalert
+   cp ./bin/loginalert /usr/bin/
+   chown root:root /usr/bin/loginalert
+   chmod 500 /usr/bin/loginalert
    ```
 		
 6. Add the following entry to the files in the pam.d directory. You should do this at a minimum for `sshd`, but we recommend that you also add the line in the `login`, `su` and `sudo` files.
 
    ```bash
-  vim /etc/pam.d/sshd
-  vim /etc/pam.d/login
-  vim /etc/pam.d/su
-  vim /etc/pam.d/sudo
+   vim /etc/pam.d/sshd
+   vim /etc/pam.d/login
+   vim /etc/pam.d/su
+   vim /etc/pam.d/sudo
    ```
 
    and add this line to the end of the last `session` parameters in the file.
 
    ```bash
-  session optional pam_exec.so /usr/bin/loginalert
+   session optional pam_exec.so /usr/bin/loginalert
    ```
 
 <br>
@@ -67,7 +67,7 @@ The `loginalert` application requires the following additional packages to work.
 
 1. Configure the recipient's email address.
 
-    For a single recipient (TO).Download files from this repository directly with git or via https.
+    For a single recipient (TO). Download files from this repository directly with git or via https.
    ```
    emailTo='user@example.com'
    ```
@@ -105,7 +105,7 @@ The `loginalert` application requires the following additional packages to work.
 
 ### Custom logo header
 
-==Supported image formats: jpeg, png et svg. Maximum size: 312 x 56==
+Supported image formats: jpeg, png et svg. Maximum size: 312 x 56
 
 1. Convert your header logo to base64.
    ```bash
