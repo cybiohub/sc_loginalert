@@ -1,236 +1,248 @@
 | ![alt text][logo] | Integration & Securite Systeme |
 | ------------- |:-------------:|
 
-# Installation of the Loginalert script.
+# Cybionet - Ugly Codes Division
 
-Install this script on the machine where you want to be alerted when a user logs on. It will send an email in HTML format for each authentication (login, ssh, su and sudo).
+## REQUIRED
 
-In the script, we use the "Mutt" application to send the warning email.
+The `loginalert` application requires the following additional packages to work.
 
-## Requirement
-
- Use "apt-get" command to install these dependencies.
+ Use `apt-get` command to install these dependencies.
  - mutt
  - whois
  - gpgsm
 
+<br>
 
-## Deployment
+## INSTALLATION
 
-1. Deploy the executable of the "loginalert" script.
+1. Download files from this repository directly with git or via https.
+   ```bash
+  wget -o loginalert.zip https://github.com/cybiohub/sc_loginalert/archive/refs/heads/main.zip
+   ```
 
-```bash
-cp ./bin/loginalert /usr/bin/
+2. Unzip the zip file.
+   ```bash
+  unzip loginalert.zip
+   ```
 
-chown root:root /usr/bin/loginalert
-chmod 500 /usr/bin/loginalert
-```
+3. Make changes to the install script to configure it to match your environment.
 
-2. Add the following entry to the files in the pam.d directory. You should do this at a minimum for "sshd", but we recommend that you also add the line in the "login", "su" and "sudo" files.
+	==You need to customize the following settings:==
 
-```bash
-vim /etc/pam.d/sshd
-vim /etc/pam.d/login
-vim /etc/pam.d/su
-vim /etc/pam.d/sudo
-```
+	- The destination email address(es).
+	- The sending email address.
+	- The IP address(es) or range of IP addresses authorized to connect.
+	- The excluded user.
+	- Your logo in jpeg, png or svg format converted to base64.
 
-and add this line to the end of the last "session" parameters in the file.
+4. Once completed, set the `Configured` parameter to `true`.
 
-```
-session optional pam_exec.so /usr/bin/loginalert
-```
+5. Deploy the executable of the `loginalert` script.
 
+   ```bash
+  cp ./bin/loginalert /usr/bin/
+  chown root:root /usr/bin/loginalert
+  chmod 500 /usr/bin/loginalert
+   ```
+		
+6. Add the following entry to the files in the pam.d directory. You should do this at a minimum for `sshd`, but we recommend that you also add the line in the `login`, `su` and `sudo` files.
 
-## Configuration
+   ```bash
+  vim /etc/pam.d/sshd
+  vim /etc/pam.d/login
+  vim /etc/pam.d/su
+  vim /etc/pam.d/sudo
+   ```
 
-Adjust these variables in the script to match your reality.
+   and add this line to the end of the last `session` parameters in the file.
+
+   ```bash
+  session optional pam_exec.so /usr/bin/loginalert
+   ```
+
+<br>
+
+## CONFIGURATION
 
 1. Configure the recipient's email address.
 
-For a single recipient (TO).
+    For a single recipient (TO).Download files from this repository directly with git or via https.
+   ```
+   emailTo='user@example.com'
+   ```
 
-```
-emailTo='user@example.com'
-```
+2. For a several recipients (TO). The delimiter is the comma and spaces don't matter.
+   ```
+   emailTo='user1@example.com, user2@example.com'
+   ```
 
-For a several recipients (TO). The delimiter is the comma and spaces don't matter.
+3. Configure the sender's email address.
 
-```
-emailTo='user1@example.com, user2@example.com'
-```
+    Defined sender (FROM).
+   ```
+   emailFrom='alert@example.com'
+   ```
 
-2. Configure the sender's email address.
+4. Configure this variable to allow one or more IP addresses or you can allow one or more subnets.
 
-Defined sender (FROM).
+    For an unique IP.
+   ```
+   ALLOWIP='192.168.0.11'
+   ```
 
-```
-emailFrom='alert@example.com'
-```
+    For an IP address range.
+   ```
+   ALLOWIP='192.168.0'
+   ```
 
-3. Configure this variable to allow one or more IP addresses or you can allow one or more subnets.
+    For multiple IP address ranges. Each range of IP addresses must be separated by space.
+   ```
+   ALLOWIP='192.168.0 172.16.0 10.0.0'
+   ```
 
-For an unique IP.
+<br>
 
-```
-ALLOWIP='192.168.0.11'
-```
+### Custom logo header
 
-To add multiple IP addresses. Each of them must be separated by a space.
-
-```
-ALLOWIP='192.168.0.11 172.16.1.10'
-```
-
-For an IP address range.
-
-```
-ALLOWIP='192.168.0'
-```
-
-For multiple IP address ranges. Each range of IP addresses must be separated by space.
-
-```
-ALLOWIP='192.168.0 172.16.0'
-```
-
-
-## Custom logo header
-
-Supported image formats: jpeg, png et svg.
-Maximum size: 312 x 56
+==Supported image formats: jpeg, png et svg. Maximum size: 312 x 56==
 
 1. Convert your header logo to base64.
+   ```bash
+   cat picture.jpg | base64
+   ```
 
-```bash
-cat picture.jpg | base64
-```
+2. Seach in the script the word `BEGIN IMAGE` in the script and make the adjustment.
 
-2. Seach in the script the word "BEGIN IMAGE" in the script and make the adjustment.
+   Between these tags.
+   ```
+   <!-- BEGIN IMAGE -->
+   ...
+   <!-- END IMAGE -->
+   ```
 
-Between these tags.
+   Change to your business name in the alternate name tag.
+   ```
+   alt=\"Cybionet\"
+   ```
 
-```
-<!-- BEGIN IMAGE -->
- ...
-<!-- END IMAGE -->
-```
+   And select the type of image used.
+     - jpeg
+     - png
+     - svg+xml
 
-Change for your enterprise name in alternate name tag.
+   By example for an image in jpeg format.
+   ```
+   src=\"data:image/jpg;base64
+   ```
 
-```
-alt=\"Cybionet\"
-```
+        For an image in png format.
+        ```
+        src=\"data:image/png;base64
+        ```
 
-Select the type of image used.
-  - jpeg
-  - png
-  - svg+xml
+   For an image in svg format.
+   ```
+   src=\"data:image/svg+xml;base64
+   ```
 
-By example,
+   Replace the base64 image with your own.
 
-For jpg picture
+9. Voilà! Enjoy!
 
-```
-src=\"data:image/jpg;base64
-```
-
-For png picture
-
-```
-src=\"data:image/png;base64
-```
-
-For svg picture
-
-```
-src=\"data:image/svg+xml;base64
-```
-
-Replace the base64 image with your own.
-
+<br>
 
 ## SMTP Client (_optional_)
 
-This section is only to help people set up email sending from their machine. use whatever method you want, it doesn't matter.
+This section is only intended to help users configure sending emails from their machine. Use whatever method you want, it doesn't matter.
 
-1. Configure email sending.
+### Send with Exim4
 
-A. For direct sending of emails with Exim4, uses the commande.
+First method is with `Exim4` services.
 
-```bash
-dpkg-reconfigure exim4-config
-```
+1. Configure the sending of emails.
+   a. For direct sending of emails with Exim4, uses the commande.
 
-```
-mail sent by smarthost; no local mail
-System mail name:  example.com
-IP-addresses to listen on for incoming SMTP connections: 127.0.0.1
-Other destinations for which mail is accepted: server.example.com
-Visible domain name for local users: example.com
-IP address or host name of the outgoing smarthost: smtp.example.com
-Keep number of DNS-queries minimal (Dial-on-Demand)? No
-Split configuration into small files? No
-```
+   ```bash
+   dpkg-reconfigure exim4-config
+   ```
 
-B. Authenticated sending of email or from a non-commercial connection that requires authentication with SSMTP.
+   ```
+   mail sent by smarthost; no local mail
+   System mail name:  example.com
+   IP-addresses to listen on for incoming SMTP connections: 127.0.0.1
+   Other destinations for which mail is accepted: server.example.com
+   Visible domain name for local users: example.com
+   IP address or host name of the outgoing smarthost: smtp.example.com
+   Keep number of DNS-queries minimal (Dial-on-Demand)? No
+   Split configuration into small files? No
+   ```
 
-```bash
-vim /etc/ssmtp/ssmtp.conf
-```
+   b. Manual verification.
+     Create a message.
+   ```bash
+   vim mail.txt
+   ```
 
-```
-# ## Config file for sSMTP sendmail
-
-
-
-
-
-## SMTP Client (_optional_)
+   ```
+   This is an email verification email service. Thank you for not replying to this message.
+   ```
   
-This section is only to help people set up email sending from their machine. use whatever method you want, it doesn't matter.
+   Send the message.
+   ```bash
+   cat mail.txt | /usr/bin/mail -s "Email verification" "user@example.com"
+   ```
 
-1. Configure email sending.
+<br>
 
-A. For direct sending of emails with Exim4, uses the commande.
+ ### Config with SSMTP
+  
+The second method you can use is with the `SSMTP` application. It will allow authenticated sending of email or from a non-commercial connection requiring authentication.
 
-```bash
-dpkg-reconfigure exim4-config
-```
+1. Configure the sending of emails.
+   a. Install ssmtp package.
+   ```bash
+   apt-get install ssmtp
+   ```
 
-```
-mail sent by smarthost; no local mail
-System mail name:  example.com
-IP-addresses to listen on for incoming SMTP connections: 127.0.0.1
-Other destinations for which mail is accepted: server.example.com
-Visible domain name for local users: example.com
-IP address or host name of the outgoing smarthost: smtp.example.com
-Keep number of DNS-queries minimal (Dial-on-Demand)? No
-Split configuration into small files? No
-```
+   b. Authenticated sending of email or from a connection that requires authentication with SSMTP.
 
-B. Authenticated sending of email or from a non-commercial connection that requires authentication with SSMTP.
+   ```bash
+   vim /etc/ssmtp/ssmtp.conf
+   ```
 
-```bash
-vim /etc/ssmtp/ssmtp.conf
-```
+   ```
+   root=postmaster
+   
+   #:25, :465, :587 and :2525
+   mailhub=mail.example.com:25
+   
+   hostname=mail.example.com
 
-```
-# ## Config file for sSMTP sendmail
+   Authuser=username
+   AuthPass=password
+   UseTLS=YES
+   ```
 
-# ## The person who gets all mail for userids < 1000
-# ## Make this empty to disable rewriting.
-root=postmaster
+   c. Manual verification.
+   
+   Create a message.
+   ```bash
+   vim mail.txt
+   ```
 
-# ## The destination server where the email goes. The name of the machine is required,
-# ## no MX record is consulted. Usally, mailhosts are named mail.example.com.
-:25, :465, :587 and :2525
-mailhub=mail.example.com
-
-# ## Where will the mail seem to come from?
-
-#rewriteDomain=
-```
+   ```
+   To: user[[@example.com]]
+   From: user[[@example.com]]
+   Subject: Email verification
+   
+   This is an email verification email service. Thank you for not replying to this message.
+   ```
+  
+   Send the message.
+   ```bash
+   /usr/sbin/ssmtp user@example.com < mail.txt
+   ```
 
 ---
 [logo]: ./md/logo.png "Cybionet"

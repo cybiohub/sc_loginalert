@@ -4,12 +4,12 @@
 # * Creation:           (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               loginalert
-# * Version:            0.2.5
+# * Version:            0.2.7
 # *
 # * Comment:            Script that alerts when accessing the root account.
 # *
 # * Date: March 22, 2021
-# * Modification: January 04, 2021
+# * Modification: February 11, 2022
 # *
 # * **************************************************************************
 # *
@@ -52,9 +52,9 @@ readonly ALLOWIP='192.168.0'					# ## IP Range.
 readonly excludedUsers='ansible_user'                           # ## To exclude users used for automated scripts (Ex.: Ansible).
 
 myLogoAlt='Cybionet'                                            # ## Alternate name for the logo.
-myLogoMime='jpeg;base64'					# ## Supported Types: jpeg;base64, png;base64 or svg+xml;base64.
+myLogoMime='png;base64'						# ## Supported Types: jpeg;base64, png;base64 or svg+xml;base64.
 
-# ## Put your base64 jpeg logo here.
+# ## Put your base64 image logo here.
 myLogo='iVBORw0KGgoAAAANSUhEUgAAATgAAAA4CAYAAABpCOTeAAAZmnpUWHRSYXcgcHJvZmlsZSB0eXBl
 IGV4aWYAAHjapZpZkly5kUX/sQotAfOwHAAOmPUOevk6FxFkkaWSumTNJDOTMbwH+HAHR7jzv/9z
 3T/4U0btLpfW66jV8yePPOLkl+4/f+b7Hnx+39+f1L+/hd8fd+nHmyIPJb3y899ev48fHo+8Pn4f
@@ -318,7 +318,8 @@ Vcr8RTr8nbThFWn27dIN5YKkENFjg9z2+tIVK6QDBXdnplNKWi+N6i+dEf0jRUyRpku/vi1lNH1X
 mpTp91GwwljMyUelVd9Jra4MtOzHSy8lSZukQ/ulnz6VGvoVJRTOPHBWzAty+NEXMsZYYSmG9SY0
 mIYxbZ1h6YcRRhhhhBFGGGGEERz8H4WmAUO2R7hFAAAAAElFTkSuQmCC'
 
-declare -r version="v0.2.5"
+declare -r version="v0.2.6"
+
 
 #####################################################################
 # ## GLOBAL VARIABLES
@@ -327,7 +328,12 @@ readonly APPMAIL='/usr/bin/mutt'
 
 readonly myHost=$(hostname -s)
 readonly myDate=$(date +"%B %d, %Y  %H:%M:%S (%Z)")
-ipAddr="${PAM_RHOST}"
+
+if [[ "${PAM_RHOST}" =~ ^[[:alpha:]] ]]; then
+  ipAddr=$(getent hosts "${PAM_RHOST}" | awk '{print $1}')
+else
+  ipAddr="${PAM_RHOST}"
+fi
 
 readonly reportHeader='ALERT REPORT'
 readonly reportSubTitle="Your <strong>${PAM_USER}</strong> account was used to log in to <strong>${myHost}</strong> machine."
@@ -336,9 +342,9 @@ readonly reportTitleHigh='Login From Unkown Device'
 readonly reportSeverityHigh='High'
 readonly reportSeverityClassHigh='font-size:15pt;color:#e81123;font-weight:bold'
 
-readonly reportTitleMedium='Login From Authorized Device'
-readonly reportSeverityMedium='Medium'
-readonly reportSeverityClassMedium='font-size:15pt;color:##ff8e00;font-weight:bold'
+#readonly reportTitleMedium='Login From Authorized Device'
+#readonly reportSeverityMedium='Medium'
+#readonly reportSeverityClassMedium='font-size:15pt;color:##ff8e00;font-weight:bold'
 
 readonly reportTitleLow='Login From Authorized Device'
 readonly reportTitleLowLogin='Login From Console'
@@ -346,7 +352,7 @@ readonly reportTitleLowSu='Login With Privilege Escalation'
 readonly reportSeverityLow='Low'
 readonly reportSeverityClassLow='font-size:15pt;color:#FFA059;font-weight:bold'
 
-readonly myPath=$(dirname $0)
+readonly myPath=$(dirname "${0}")
 readonly reportContent="${myPath}/email.html"
 
 
@@ -357,32 +363,20 @@ readonly reportContent="${myPath}/email.html"
 function checkifMuttExist {
  readonly APPDEP='mutt'
 
- dpkg-query -s "${APPDEP}" > /dev/null 2>&1
- dependency=$(echo ${?})
-
  # ## Check if Mutt services is installed.
- # ## Result: 0=Installed, 1=Missing
- if [ "${dependency}" = 1 ]; then
+ if ! dpkg-query -s "${APPDEP}" > /dev/null 2>&1; then
    echo -e "\e[34;1;208mINFORMATION:\e[0m Installing the required dependencies (${APPDEP})."
    apt-get install -y "${APPDEP}"
  fi
 
- dpkg-query -s "whois" > /dev/null 2>&1
- dependencyWhois=$(echo ${?})
-
  # ## Check if Whois package is installed.
- # ## Result: 0=Installed, 1=Missing
- if [ "${dependencyWhois}" = 1 ]; then
+ if ! dpkg-query -s "whois" > /dev/null 2>&1; then
    echo -e "\e[34;1;208mINFORMATION:\e[0m Installing the required dependencies Whois)."
    apt-get install -y whois
  fi
 
- dpkg-query -s "gpgsm" > /dev/null 2>&1
- dependencyGpgsm=$(echo ${?})
-
  # ## Check if Gpgsm package is installed.
- # ## Result: 0=Installed, 1=Missing
- if [ "${dependencyGpgsm}" = 1 ]; then
+ if ! dpkg-query -s "gpgsm" > /dev/null 2>&1; then
    echo -e "\e[34;1;208mINFORMATION:\e[0m Installing the required dependencies Gpgsm)."
    apt-get install -y gpgsm
  fi
@@ -399,7 +393,7 @@ function ipMatchListorNot {
  fi
 
  for item in "${authorizedIP[@]}"; do
-  if [[ "${ipAddr}" =~ "${item}" ]]; then
+  if [[ "${ipAddr}" =~ ${item} ]]; then
 # ## Authentification SSH dans la liste autorisée (PAM_SERVICE est SSH)
       # ## Severity Low (remote).
       reportTitle="${reportTitleLow}"
@@ -449,7 +443,7 @@ function ipRFC1918 {
   PATTERN+="|^169\.254\.$i\."
  done
 
- resulta=$(echo ${ipAddr} | egrep "$PATTERN")
+ resulta=$(echo ${ipAddr} | grep -E "$PATTERN")
 
  if [ -z "${resulta}" ]; then
    ipCountry=$(whois -H "${ipAddr}" | grep -i country | uniq | awk -F ":" '{print $2}' | sed 's/ *$//' | sed -e 's/[ \t]*//')
@@ -565,7 +559,7 @@ echo -e "
 <tr>
 
 <!-- BEGIN IMAGE -->
-<td style=\"BORDER-TOP: medium none; BORDER-RIGHT: medium none; BORDER-BOTTOM: medium none; BORDER-LEFT: medium none; BACKGROUND-COLOR: transparent\"><img style=\"BORDER-TOP: medium none; BORDER-RIGHT: medium none; BORDER-BOTTOM: medium none; BORDER-LEFT: medium none; DISPLAY: block\" alt=\"${myLogoAlt}\" src=\"data:image/png;base64,
+<td style=\"BORDER-TOP: medium none; BORDER-RIGHT: medium none; BORDER-BOTTOM: medium none; BORDER-LEFT: medium none; BACKGROUND-COLOR: transparent\"><img style=\"BORDER-TOP: medium none; BORDER-RIGHT: medium none; BORDER-BOTTOM: medium none; BORDER-LEFT: medium none; DISPLAY: block\" alt=\"${myLogoAlt}\" src=\"data:image/\"${myLogoMime}\",
 ${myLogo}
 \" width=\"298\" hspace=\"0\" vspace=\"0\" /></td>
 <!-- END IMAGE -->
@@ -696,7 +690,8 @@ else {
   declare -a excludedUser=($(printf "${excludedUsers}"))
 
   for item in "${excludedUser[@]}"; do
-    if [[ "${excludedUser}" == "${PAM_USER}" || "${excludedUser}" == "${PAM_RUSER}" ]]; then
+    #if [[ "${excludedUser}" == "${PAM_USER}" || "${excludedUser}" == "${PAM_RUSER}" ]]; then
+    if [[ "${item}" == "${PAM_USER}" || "${item}" == "${PAM_RUSER}" ]]; then
       exit 0
     fi
   done
