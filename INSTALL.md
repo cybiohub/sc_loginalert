@@ -45,8 +45,14 @@ The `loginalert` application requires the following additional packages to work.
    chown root:root /usr/bin/loginalert
    chmod 500 /usr/bin/loginalert
    ```
+
+6. Deploy the configuration file.
+
+   ```bash
+   cp ./conf/loginalert.conf /etc/
+   ```
 		
-6. Add the following entry to the files in the pam.d directory. You should do this at a minimum for `sshd`, but we recommend that you also add the line in the `login`, `su` and `sudo` files.
+7. Add the following entry to the files in the pam.d directory. You should do this at a minimum for `sshd`, but we recommend that you also add the line in the `login`, `su` and `sudo` files.
 
    ```bash
    vim /etc/pam.d/sshd
@@ -65,26 +71,31 @@ The `loginalert` application requires the following additional packages to work.
 
 ## CONFIGURATION
 
-1. Configure the recipient's email address.
+1. Edit the configuration file.
+   ```bash
+   vim /etc/loginalert.conf
+   ```
+
+2. Configure the recipient's email addresses.
 
     For a single recipient (TO). Download files from this repository directly with git or via https.
    ```
    emailTo='user@example.com'
    ```
 
-2. For a several recipients (TO). The delimiter is the comma and spaces don't matter.
+3. For a several recipients (TO). The delimiter is the comma and spaces don't matter.
    ```
    emailTo='user1@example.com, user2@example.com'
    ```
 
-3. Configure the sender's email address.
+4. Configure the sender's email address.
 
     Defined sender (FROM).
    ```
    emailFrom='alert@example.com'
    ```
 
-4. Configure this variable to allow one or more IP addresses or you can allow one or more subnets.
+5. Configure this variable to allow one or more IP addresses or you can allow one or more subnets.
 
     For an unique IP.
    ```
@@ -105,50 +116,47 @@ The `loginalert` application requires the following additional packages to work.
 
 ### Custom logo header
 
-Supported image formats: jpeg, png et svg. Maximum size: 312 x 56
+Supported image formats: jpeg, png et svg 
+Maximum image size: 312 x 56
 
-1. Convert your header logo to base64.
+1. Start by converting your header logo to base64.
    ```bash
    cat picture.jpg | base64
    ```
 
-2. Seach in the script the word `BEGIN IMAGE` in the script and make the adjustment.
-
-   Between these tags.
+2. Change to your business name in the alternate name tag.
    ```
-   <!-- BEGIN IMAGE -->
-   ...
-   <!-- END IMAGE -->
+   myLogoAlt='Cybionet'
    ```
 
-   Change to your business name in the alternate name tag.
-   ```
-   alt=\"Cybionet\"
-   ```
-
-   And select the type of image used.
+3. And select the type of image used.
      - jpeg
      - png
      - svg+xml
 
-   By example for an image in jpeg format.
+    By example for an image in png format.
    ```
-   src=\"data:image/jpg;base64
-   ```
-
-        For an image in png format.
-        ```
-        src=\"data:image/png;base64
-        ```
-
-   For an image in svg format.
-   ```
-   src=\"data:image/svg+xml;base64
+   myLogoMime='png'
    ```
 
-   Replace the base64 image with your own.
+    For an image in jpeg format.
+   ```
+   myLogoMime='jpeg'
+   ```
 
-9. Voilà! Enjoy!
+    For an image in svg format.
+   ```
+   myLogoMime='svg+xml'
+   ```
+
+4. In the configuration file, find the `myLogo` parameter and replace the value with the result of the base64 conversion.
+
+    Replace the base64 image with your own.
+   ```
+   myLogo=''
+   ```
+
+5. Voilà! Enjoy!
 
 <br>
 
