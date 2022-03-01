@@ -11,8 +11,8 @@ This script sends an email in HTML format at each authentication for one or seve
 You can apply the launch of this script for each of the PAM modules.
 
 Recommended:
- - Sshd
- - Su
+ - sshd
+ - su
  - sudo
 
 <br>
