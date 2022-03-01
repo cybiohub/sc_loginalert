@@ -4,12 +4,12 @@
 # * Creation:           (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               loginalert
-# * Version:            2.7.0d
+# * Version:            2.7.1
 # *
 # * Comment:            Script that alerts when accessing the root account.
 # *
 # * Date: March 22, 2021
-# * Modification: February 13, 2022
+# * Modification: March 1, 2022
 # *
 # * **************************************************************************
 # *
@@ -30,7 +30,7 @@ source /etc/loginalert.conf
 #####################################################################
 # ## GLOBAL VARIABLES
 
-declare -r version='v2.7.0d'
+declare -r version='v2.7.1'
 
 readonly APPMAIL='/usr/bin/mutt'
 
@@ -376,6 +376,13 @@ function sendMail {
 if [ "${EUID}" -ne 0 ] ; then
   echo -e '\n\e[33mWARNING: This script must be run with sudo or as root.\e[0m'
   exit 0
+fi
+
+# ## Check if the script is configured.
+if [ "${isConfigured}" == 'false' ] ; then
+ echo -e '\n\e[38;5;208mWARNING: Customize the configuration file of loginalert. Then set the "isConfigured" variable to "true".\n\e[0m'
+ echo -e '\tvim /etc/loginalert.conf'
+ exit 0
 fi
 
 # ## Clear screen.
