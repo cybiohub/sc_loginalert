@@ -27,6 +27,9 @@ The `loginalert` application requires the following additional packages to work.
    ```
 
 3. Make changes to the install script to configure it to match your environment.
+   ```bash
+   vim ./conf/loginalert.conf
+   ```
 
 	You need to customize the following settings:
 
@@ -37,9 +40,11 @@ The `loginalert` application requires the following additional packages to work.
 	- Your logo in jpeg, png or svg format converted to base64.
 
 4. Once completed, set the `Configured` parameter to `true`.
+   ```bash
+   vim ./bin/loginalert
+   ```
 
 5. Deploy the executable of the `loginalert` script.
-
    ```bash
    cp ./bin/loginalert /usr/bin/
    chown root:root /usr/bin/loginalert
