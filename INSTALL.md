@@ -39,7 +39,7 @@ The `loginalert` application requires the following additional packages to work.
 	- The excluded user.
 	- Your logo in jpeg, png or svg format converted to base64.
 
-4. Once completed, set the `Configured` parameter to `true`.
+4. Once completed, set the `isConfigured` parameter to `true`.
    ```bash
    vim ./bin/loginalert
    ```
