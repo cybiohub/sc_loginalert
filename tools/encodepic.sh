@@ -2,15 +2,15 @@
 #set -x
 # * **************************************************************************
 # *
-# * Creation:           (c) 2004-2022  Cybionet - Ugly Codes Division
+# * Author:             (c) 2004-2022  Cybionet - Ugly Codes Division
 # *
 # * File:               encodepic.sh
 # * Version:            0.1.1
 # *
-# * Comment:            Tool to encode picture for loginalert script.
+# * Description:        Tool to encode picture for loginalert script.
 # *
 # * Creation: December 20, 2021
-# * Change: March 01, 2022
+# * Change:   March 01, 2022
 # *
 # * **************************************************************************
 # * PICTURE
