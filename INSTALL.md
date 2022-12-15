@@ -72,6 +72,12 @@ The `loginalert` application requires the following additional packages to work.
    session optional pam_exec.so /usr/bin/loginalert
    ```
 
+For Ubuntu 22.04 use this to avoid error "exit code 126".
+
+   ```bash
+   session optional pam_exec.so seteuid /usr/bin/loginalert
+
+
 <br>
 
 ## CONFIGURATION

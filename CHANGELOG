@@ -1,6 +1,7 @@
 v2.7.2
 ## Added
   - Added an option to display the script version (loginalert version). This makes it easier to deploy by Ansible.
+  - Add comment for Ubuntu 22.04 in INSTALL.md.
 
 v2.7.1
 ## Added
