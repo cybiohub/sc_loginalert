@@ -18,7 +18,7 @@ The `loginalert` application requires the following additional packages to work.
 
 1. Download files from this repository directly with git or via https.
    ```bash
-   wget -o loginalert.zip https://github.com/cybiohub/sc_loginalert/archive/refs/heads/main.zip
+   wget -O loginalert.zip https://github.com/cybiohub/sc_loginalert/archive/refs/heads/main.zip
    ```
 
 2. Unzip the zip file.
