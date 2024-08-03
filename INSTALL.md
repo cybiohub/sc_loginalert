@@ -89,7 +89,7 @@ The `loginalert` application requires the following additional packages to work.
 
     Defined sender (FROM).
    ```
-   emailFrom='alert@example.com'
+   emailFrom='notification@example.com'
    ```
 
 5. Configure this variable to allow one or more IP addresses or you can allow one or more subnets.
