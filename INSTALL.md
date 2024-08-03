@@ -12,19 +12,16 @@ The `loginalert` application requires the following additional packages to work.
  - gpgsm
 
 
+<br>
+
 ## INSTALLATION
 
 1. Download files from this repository directly with git or via https.
    ```bash
-   wget -O loginalert.zip https://github.com/cybiohub/sc_loginalert/archive/refs/heads/main.zip
+   git clone https://github.com/cybiohub/sc_loginalert.git
    ```
 
-2. Unzip the zip file.
-   ```bash
-   unzip loginalert.zip
-   ```
-
-3. Make changes to the install script to configure it to match your environment.
+2. Make changes to the install script to configure it to match your environment.
    ```bash
    vim ./conf/loginalert.conf
    ```
@@ -37,26 +34,23 @@ The `loginalert` application requires the following additional packages to work.
 	- The excluded user.
 	- Your logo in jpeg, png or svg format converted to base64.
 
-4. Once completed, set the `isConfigured` parameter to `true`.
-   ```bash
-   vim ./bin/loginalert
-   ```
+> [!NOTE]
+> Don't forget to set the 'isConfigured' parameter to 'true', otherwise the script will not be apply. This is for security purposes for your environment.
 
-5. Deploy the executable of the `loginalert` script.
+3. Deploy the executable of the `loginalert` script.
    ```bash
    cp ./bin/loginalert /usr/bin/
    chown root:root /usr/bin/loginalert
    chmod 500 /usr/bin/loginalert
    ```
 
-6. Deploy the configuration file.
+4. Deploy the configuration file.
 
    ```bash
    cp ./conf/loginalert.conf /etc/
    ```
 		
-7. Add the following entry to the files in the pam.d directory. You should do this at a minimum for `sshd`, but we recommend that you also add the line in the `login`, `su` and `sudo` files.
-
+5. Add the following entry to the files in the pam.d directory. You should do this at a minimum for `sshd`, but we recommend that you also add the line in the `login`, `su` and `sudo` files.
    ```bash
    vim /etc/pam.d/sshd
    vim /etc/pam.d/login
@@ -65,17 +59,12 @@ The `loginalert` application requires the following additional packages to work.
    ```
 
    and add this line to the end of the last `session` parameters in the file.
-
-   ```bash
-   session optional pam_exec.so /usr/bin/loginalert
-   ```
-
-   For Ubuntu 22.04, use this parameter to avoid error "exit code 126".
-
    ```bash
    session optional pam_exec.so seteuid /usr/bin/loginalert
    ```
 
+
+<br>
 
 ## CONFIGURATION
 
@@ -121,6 +110,8 @@ The `loginalert` application requires the following additional packages to work.
    ```
 
 
+<br>
+
 ### Custom logo header
 
 Supported image formats: jpeg, png et svg 
@@ -164,98 +155,6 @@ Maximum image size: 312 x 56
    ```
 
 5. Voilà! Enjoy!
-
-
-## SMTP Client (_optional_)
-
-This section is only intended to help users configure sending emails from their machine. Use whatever method you want, it doesn't matter.
-
-### Send with Exim4
-
-First method is with `Exim4` services.
-
-1. Configure the sending of emails.
-   a. For direct sending of emails with Exim4, uses the commande.
-
-   ```bash
-   dpkg-reconfigure exim4-config
-   ```
-
-   ```
-   mail sent by smarthost; no local mail
-   System mail name:  example.com
-   IP-addresses to listen on for incoming SMTP connections: 127.0.0.1
-   Other destinations for which mail is accepted: server.example.com
-   Visible domain name for local users: example.com
-   IP address or host name of the outgoing smarthost: smtp.example.com
-   Keep number of DNS-queries minimal (Dial-on-Demand)? No
-   Split configuration into small files? No
-   ```
-
-   b. Manual verification.
-     Create a message.
-   ```bash
-   vim mail.txt
-   ```
-
-   ```
-   This is an email verification email service. Thank you for not replying to this message.
-   ```
-  
-   Send the message.
-   ```bash
-   cat mail.txt | /usr/bin/mail -s "Email verification" "user@example.com"
-   ```
-
-
- ### Config with SSMTP
-  
-The second method you can use is with the `SSMTP` application. It will allow authenticated sending of email or from a non-commercial connection requiring authentication.
-
-1. Configure the sending of emails.
-   a. Install ssmtp package.
-   ```bash
-   apt-get install ssmtp
-   ```
-
-   b. Authenticated sending of email or from a connection that requires authentication with SSMTP.
-
-   ```bash
-   vim /etc/ssmtp/ssmtp.conf
-   ```
-
-   ```
-   root=postmaster
-   
-   #:25, :465, :587 and :2525
-   mailhub=mail.example.com:25
-   
-   hostname=mail.example.com
-
-   Authuser=username
-   AuthPass=password
-   UseTLS=YES
-   ```
-
-   c. Manual verification.
-   
-   Create a message.
-   ```bash
-   vim mail.txt
-   ```
-
-   ```
-   To: user[[@example.com]]
-   From: user[[@example.com]]
-   Subject: Email verification
-   
-   This is an email verification email service. Thank you for not replying to this message.
-   ```
-  
-   Send the message.
-   ```bash
-   /usr/sbin/ssmtp user@example.com < mail.txt
-   ```
 
 ---
 [logo]: ./md/logo.png "Cybionet"
