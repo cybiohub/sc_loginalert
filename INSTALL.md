@@ -12,7 +12,6 @@ The `loginalert` application requires the following additional packages to work.
  - whois
  - gpgsm
 
-<br>
 
 ## INSTALLATION
 
@@ -77,7 +76,8 @@ The `loginalert` application requires the following additional packages to work.
    ```bash
    session optional pam_exec.so seteuid /usr/bin/loginalert
    ```
-<br>
+
+
 ## CONFIGURATION
 
 1. Edit the configuration file.
@@ -121,7 +121,6 @@ The `loginalert` application requires the following additional packages to work.
    ALLOWIP='192.168.0 172.16.0 10.0.0'
    ```
 
-<br>
 
 ### Custom logo header
 
@@ -167,7 +166,6 @@ Maximum image size: 312 x 56
 
 5. Voilà! Enjoy!
 
-<br>
 
 ## SMTP Client (_optional_)
 
@@ -210,7 +208,6 @@ First method is with `Exim4` services.
    cat mail.txt | /usr/bin/mail -s "Email verification" "user@example.com"
    ```
 
-<br>
 
  ### Config with SSMTP
   
