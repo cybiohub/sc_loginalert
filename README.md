@@ -14,6 +14,8 @@ Recommended:
  - sudo
 
 
+<br>
+
 ## REQUIRED
 
 The `loginalert` application requires the following additional packages to work.
@@ -24,10 +26,14 @@ The `loginalert` application requires the following additional packages to work.
  - gpgsm
 
 
+<br>
+
 ## INSTALLATION
 
 [Installation and Configuration](INSTALL.md) 
 
+
+<br>
 
 ## SCREENSHOT
 
